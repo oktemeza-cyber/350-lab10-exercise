@@ -12,6 +12,8 @@ uniform int MAX_ITERS;
 uniform vec2 windowSizePixels;
 uniform vec2 camCenterWorld;
 uniform float camWorldUnitsPerPixel;
+uniform vec2 oldCamCenterWorld;
+uniform float oldCamWorldUnitsPerPixel;
 
 // reprojection (1d) may require extra uniforms here...
 
@@ -47,8 +49,7 @@ vec2 windowToWorld(vec2 windowCoords) {
 
 // For reprojection
 vec2 worldToOldWindow(vec2 worldCoords) {
-    // TODO
-    return vec2(0.0);
+    return ((worldCoords - oldCamCenterWorld)/oldCamWorldUnitsPerPixel) + windowSizePixels/2.0;
 }
 
 // For SSAA
@@ -57,18 +58,28 @@ vec2 worldToOldWindow(vec2 worldCoords) {
 // which is in the dy'th row and dx'th column (both 0-indexed).
 vec2 delta(vec2 dxy) {
     // TODO
-    return vec2(0.0);
+    return (dxy + 0.5) / float(AA);
 }
 
 
 void main() {
-    // TODO
-   vec2 world = windowToWorld(gl_FragCoord.xy);
-    EscapeTime eT = escapeTimeSmooth(world);
+    vec4 total = vec4(0.0);
+    vec2 pixelCorner = gl_FragCoord.xy - 0.5;
 
-    if(eT.isInf){
-     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    } else {
-        gl_FragColor = colorTime(eT.iters);
+    for(int dy = 0; dy < AA; dy++){
+        for(int dx = 0; dx < AA; dx++){
+            vec2 samplePos = pixelCorner + delta(vec2(float(dx), float(dy)));
+            EscapeTime eT = escapeTimeSmooth(windowToWorld(samplePos));
+
+            vec4 color;
+            if(eT.isInf){
+                color = vec4(0.0, 0.0, 0.0, 1.0);
+            } else {
+                color = colorTime(eT.iters);
+            }
+            total += color;
+        }
     }
+    gl_FragColor = total / float(TOTAL_SAMPLES);
+
 }
