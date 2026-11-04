@@ -9,11 +9,14 @@ const int TOTAL_SAMPLES = AA * AA;
 
 uniform vec2 c;
 uniform int MAX_ITERS;
+uniform int TRUE_MAX_ITERS;
 uniform vec2 windowSizePixels;
 uniform vec2 camCenterWorld;
 uniform float camWorldUnitsPerPixel;
 uniform vec2 oldCamCenterWorld;
 uniform float oldCamWorldUnitsPerPixel;
+uniform sampler2D oldFrame;
+uniform bool oldCEquals;
 
 // reprojection (1d) may require extra uniforms here...
 
@@ -32,7 +35,7 @@ EscapeTime escapeTimeSmooth(vec2 z) {
     for(int n = 1; n<= MAX_ITERS; n++){
         z = vec2((z.x*z.x) - (z.y*z.y), (2.0 * z.x * z.y));
         z = z + c;        
-        if(length(z) >= 4){
+        if(length(z) > 4.0){
             float smoothed = float(n) + 1.0 - log(log(length(z))) / LOG_2;
             return EscapeTime(smoothed, false);
         }
@@ -57,7 +60,7 @@ vec2 worldToOldWindow(vec2 worldCoords) {
 // partitions along each dimension. delta((dx, dy)) returns the center of the sub-square
 // which is in the dy'th row and dx'th column (both 0-indexed).
 vec2 delta(vec2 dxy) {
-    // TODO
+  
     return (dxy + 0.5) / float(AA);
 }
 
@@ -69,13 +72,31 @@ void main() {
     for(int dy = 0; dy < AA; dy++){
         for(int dx = 0; dx < AA; dx++){
             vec2 samplePos = pixelCorner + delta(vec2(float(dx), float(dy)));
+            vec2 world = windowToWorld(samplePos);
             EscapeTime eT = escapeTimeSmooth(windowToWorld(samplePos));
 
-            vec4 color;
+            vec4 newColor;
             if(eT.isInf){
-                color = vec4(0.0, 0.0, 0.0, 1.0);
+                newColor = vec4(0.0, 0.0, 0.0, 1.0);
             } else {
-                color = colorTime(eT.iters);
+                newColor = colorTime(eT.iters);
+            }
+
+            vec2 oldUV = worldToOldWindow(world) / windowSizePixels;
+            bool inOld = (oldUV.x < 1.0 && oldUV.x > 0.0 && oldUV.y < 1.0 && oldUV.y > 0.0);
+
+            vec4 color;
+            if (inOld){
+                vec4 oldColor = texture2D(oldFrame, oldUV);
+
+                float alpha = float(MAX_ITERS) / float(TRUE_MAX_ITERS);
+                alpha = clamp(alpha, 0.0, 1.0);
+                if(oldCEquals){
+                    alpha = 1.0;
+                }
+                color = oldColor * (1.0 - alpha) + newColor * alpha;
+            } else {
+                color = newColor;
             }
             total += color;
         }

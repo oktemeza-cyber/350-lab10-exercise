@@ -124,7 +124,6 @@ int main() {
         } else {
             maxIters = std::min(maxIters * 2, TRUE_MAX_ITERS);
         }
-        // TODO set shader uniforms here...
         shader.setUniform("c", c);  
         shader.setUniform("MAX_ITERS", maxIters);
         shader.setUniform("windowSizePixels", sf::Vector2(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)));
@@ -132,7 +131,11 @@ int main() {
         shader.setUniform("camWorldUnitsPerPixel", worldUnitsPerPixel);
         shader.setUniform("oldCamCenterWorld", oldCamCenterWorld);
         shader.setUniform("oldCamWorldUnitsPerPixel", oldCamWorldUnitsPerPixel);
+        shader.setUniform("TRUE_MAX_ITERS", TRUE_MAX_ITERS);
+        bool oldCEquals = (c != oldC);
+        shader.setUniform("oldCEquals", oldCEquals);
         window.clear(sf::Color::Black);
+
         // this might change as you finish more parts!
         shader.setUniform("oldFrame", front->getTexture());
         back->clear();
@@ -149,7 +152,6 @@ int main() {
         window.display();
 
         std::swap(front, back);
-        // TODO (reprojection)... update "old" states
         oldC = c;
         oldCamCenterWorld = camCenterWorld;
         oldCamWorldUnitsPerPixel = worldUnitsPerPixel;
