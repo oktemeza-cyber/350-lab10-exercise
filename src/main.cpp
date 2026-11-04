@@ -114,10 +114,14 @@ int main() {
             maxIters = std::min(maxIters * 2, TRUE_MAX_ITERS);
         }
         // TODO set shader uniforms here...
-
+        shader.setUniform("c", c);  
+        shader.setUniform("MAX_ITERS", maxIters);
+        shader.setUniform("windowSizePixels", sf::Vector2(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)));
+        shader.setUniform("camCenterWorld", camCenterWorld);
+        shader.setUniform("camWorldUnitsPerPixel", worldUnitsPerPixel);
         window.clear(sf::Color::Black);
-        // TODO something.draw(fullscreenTriangle, &shader);
         // this might change as you finish more parts!
+        window.draw(fullscreenTriangle, &shader);
         cText.setString("c = (" + std::to_string(c.x) + ", " + std::to_string(c.y) + ")");
         cTextShadow.setString("c = (" + std::to_string(c.x) + ", " + std::to_string(c.y) + ")");
         window.draw(cTextShadow);
